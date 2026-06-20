@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>학급추첨기</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<style>
+*{box-sizing:border-box;font-family:'Pretendard',sans-serif}
+body{margin:0;padding:20px;background:linear-gradient(135deg,#0f172a,#1e3a8a,#2563eb);color:#fff}
+.title{text-align:center;font-size:64px;font-weight:900;color:#facc15}
+.wrap{display:grid;grid-template-columns:320px 1fr 320px;gap:20px}
+.panel{background:rgba(255,255,255,.12);padding:20px;border-radius:20px}
+textarea{width:100%;height:360px;font-size:22px}
+.result{height:500px;background:#fff;color:#2563eb;border-radius:25px;display:flex;align-items:center;justify-content:center;font-size:120px;font-weight:900}
+.controls{text-align:center;margin-top:15px}
+button{padding:16px 22px;font-size:24px;font-weight:800;margin:5px;border:none;border-radius:14px;cursor:pointer}
+.tag{display:inline-block;background:#fff;color:#1e3a8a;padding:8px 12px;margin:4px;border-radius:10px;font-size:22px}
+.info{text-align:center;font-size:30px;margin-top:10px}
+#flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="flash"></div>
+<div class="title">🎲 우리 반 행운의 추첨 🎲</div>
+<div class="wrap">
+<div class="panel">
+<h2>학생 명단</h2>
+<textarea id="input"></textarea>
+<div class="controls"><button onclick="registerStudents()">학생 등록</button></div>
+</div>
+<div>
+<div id="result" class="result">READY</div>
+<div class="controls">
+<button onclick="pickStudent()">🎉 랜덤 추첨</button>
+<button onclick="resetPicked()">🔄 당첨자 초기화</button>
+<button onclick="fullscreenMode()">🖥 전체화면</button>
+</div>
+<div class="info">등록 <span id="total">0</span>명 | 남은 <span id="remain">0</span>명</div>
+</div>
+<div class="panel">
+<h2>🏆 당첨자</h2>
+<div id="pickedList"></div>
+</div>
+</div>
+<script>
+let students=[],picked=[];
+function registerStudents(){
+ const names=[];
+ document.getElementById('input').value.split(/\r?\n/).forEach(r=>{
+  r.split('\t').forEach(c=>{
+   c=c.trim(); if(!c||/^\d+$/.test(c)) return; names.push(c);
+  });
+ });
+ students=[...new Set(names)]; picked=[]; update();
+}
+function update(){
+ total.textContent=students.length;
+ remain.textContent=students.length-picked.length;
+ pickedList.innerHTML=picked.map(x=>`<div class="tag">${x}</div>`).join('');
+}
+function drumRoll(){
+ const ctx=new (window.AudioContext||window.webkitAudioContext)();
+ let i=0; const t=setInterval(()=>{
+  const o=ctx.createOscillator(),g=ctx.createGain();
+  o.frequency.value=100+Math.random()*100; g.gain.value=.03;
+  o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+.05);
+  if(++i>35) clearInterval(t);
+ },80);
+}
+function ding(){
+ const ctx=new (window.AudioContext||window.webkitAudioContext)();
+ const o=ctx.createOscillator(),g=ctx.createGain();
+ o.connect(g); g.connect(ctx.destination);
+ o.frequency.value=880; g.gain.value=.1;
+ o.start(); o.stop(ctx.currentTime+.6);
+}
+function flashScreen(){flash.style.opacity='1';setTimeout(()=>flash.style.opacity='0',120);}
+function fireworks(){confetti({particleCount:200,spread:120,startVelocity:70});}
+function confettiBurst(){confetti({particleCount:400,spread:180,origin:{y:.2}});}
+function pickStudent(){
+ const remainers=students.filter(x=>!picked.includes(x));
+ if(!remainers.length) return alert('남은 학생이 없습니다.');
+ drumRoll();
+ let speed=40,round=0;
+ function roll(){
+  result.textContent=remainers[Math.floor(Math.random()*remainers.length)];
+  round++; speed+=8;
+  if(round<35) setTimeout(roll,speed);
+  else{
+   const w=remainers[Math.floor(Math.random()*remainers.length)];
+   picked.push(w);
+   result.innerHTML='🎉 '+w+' 🎉';
+   setTimeout(flashScreen,300);
+   setTimeout(fireworks,700);
+   setTimeout(confettiBurst,1400);
+   setTimeout(ding,1800);
+   update();
+  }
+ }
+ roll();
+}
+function resetPicked(){picked=[];update();}
+function fullscreenMode(){!document.fullscreenElement?document.documentElement.requestFullscreen():document.exitFullscreen();}
+</script>
+</body>
+</html>
